@@ -16,7 +16,7 @@ public class JQA2RD {
 	private Log log = LogFactory.getLog(JQA2RD.class );
 
 	public JQA2RD() {
-		log.info("JQA2RD started");
+		log.info("JQA2RD has started!");
 		connector.executeWrite("MATCH (n:RD) DETACH DELETE n");
 		long model = connector.addNode(
 			String.format(
@@ -24,14 +24,114 @@ public class JQA2RD {
 				new GregorianCalendar().getTime().toString(), config.isMethodTypeMode(), config.isMethodDisks(), config.isDataDisks()),
 			"m").id();
 		StatementResult results = connector.executeRead(
-			"MATCH (n:Package) " + 
-			"WHERE NOT (n)<-[:CONTAINS]-(:Package) " + 
+			"MATCH (n:Package) " +
+			"WHERE NOT (n)<-[:CONTAINS]-(:Package) " +
 			"RETURN n"
 		);
-		results.forEachRemaining((node) -> {
-			namespaceToDisk(node.get("n").asNode().id(), model);
-		});
+		if(!(results.hasNext())){
+			results = connector.executeRead(
+			"MATCH (n:JavaScript:File) " +
+			"RETURN n"
+			);
+			log.info("JQA2RD JavaScript");
+			results.forEachRemaining((node) -> {
+				fileToDisk(node.get("n").asNode().id(), model);
+			});
+		}else{
+			log.info("JQA2RD Java");
+			results.forEachRemaining((node) -> {
+				namespaceToDisk(node.get("n").asNode().id(), model);
+			});
+		}
+
 		log.info("JQA2RD finished");
+	}
+
+	private void fileToDisk(Long namespace, Long parent) {
+		String properties = String.format("ringWidth: %f, height: %f, transparency: %f", config.getRDRingWidth(),
+			config.getRDHeight(), config.getRDNamespaceTransparency());
+		long disk = connector.addNode(cypherCreateNode(parent, namespace, Labels.Disk.name(), properties), "n").id();
+		connector.executeRead("MATCH (n)-[:DECLARES]->(v:Variable) WHERE ID(n) = " + namespace +
+			" RETURN v").
+			forEachRemaining((result) -> {
+				variableToDisk(result.get("v").asNode(), disk);
+			});
+		connector.executeRead("MATCH (n)-[:DECLARES]->(c:Class) WHERE ID(n) = " + namespace +
+			" RETURN c").
+			forEachRemaining((result) -> {
+				classToDisk(result.get("c").asNode(), disk);
+			});
+		connector.executeRead("MATCH (n)-[:DECLARES]->(f:Function) WHERE ID(n) = " + namespace +
+			" RETURN f").
+			forEachRemaining((result) -> {
+				functionToDisk(result.get("f").asNode(), disk);
+			});
+	}
+
+	private void variableToDisk(Node variable, Long parent) {
+		String color = config.getRDDataColorAsPercentage();
+		if (config.getOutputFormat() == OutputFormat.AFrame) {
+			color = config.getRDDataColorHex();
+		}
+		String properties = String.format("ringWidth: %f, height: %f, transparency: %f, color: \'%s\'", config.getRDRingWidthAD(),
+			config.getRDHeight(), config.getRDDataTransparency(), color);
+		long disk = connector.addNode(cypherCreateNode(parent, variable.id(), Labels.Disk.name(), properties), "n").id();
+		connector.executeRead("MATCH (n)-[:HAS]->(v:Value) WHERE ID(n) = " + variable.id() +
+			" RETURN v ").
+			forEachRemaining((result) -> {
+				valueToDiskSegment(result.get("v").asNode(), disk);
+			});
+	}
+
+	private void classToDisk(Node namespace, Long parent) {
+		String color = config.getRDClassColorAsPercentage();
+		if (config.getOutputFormat() == OutputFormat.AFrame) {
+			color = config.getRDClassColorHex();
+		}
+		String properties = String.format("ringWidth: %f, height: %f, transparency: %f, color: \'%s\'", config.getRDRingWidth(),
+			config.getRDHeight(), config.getRDClassTransparency(), color);
+		long disk = connector.addNode(cypherCreateNode(parent, namespace.id(), Labels.Disk.name(), properties), "n").id();
+
+	}
+
+	private void functionToDisk(Node function, Long parent) {
+		String color = config.getRDMethodColorAsPercentage();
+		if (config.getOutputFormat() == OutputFormat.AFrame) {
+			color = config.getRDMethodColorHex();
+		}
+		String properties = String.format("ringWidth: %f, height: %f, transparency: %f, color: \'%s\'", config.getRDRingWidth(),
+			config.getRDHeight(), config.getRDMethodTransparency(), color);
+		long disk = connector.addNode(cypherCreateNode(parent, function.id(), Labels.Disk.name(), properties), "n").id();
+
+	}
+
+	private void valueToDiskSegment(Node value, Long parent) {
+		/**
+		String color = config.getRDDataColorAsPercentage();
+		if (config.getOutputFormat() == OutputFormat.AFrame) {
+			color = config.getRDDataColorHex();
+		}
+		String properties = String.format("size: %f, height: %f, transparency: %f, color: \'%s\'", 1.0, config.getRDHeight(),
+			config.getRDDataTransparency(), color);
+		connector.executeWrite(cypherCreateNode(parent, value, Labels.DiskSegment.name(), properties));
+		*/
+		double frequency = 0.0;
+		double luminance = 0.0;
+		double height = config.getRDHeight();
+		String color = config.getRDDataColorAsPercentage();
+		if (config.getOutputFormat() == OutputFormat.AFrame) {
+			color = config.getRDDataColorHex();
+		}
+		Integer numberOfStatements = 0;
+		double size = numberOfStatements.doubleValue();
+		if (numberOfStatements <= config.getRDMinArea()) {
+			size = config.getRDMinArea();
+		}
+		String properties = String.format(
+			"frequency: %f, luminance: %f, height: %f, transparency: %f, size: %f, color: \'%s\'", frequency, luminance,
+			height, config.getRDMethodTransparency(), size, color);
+		connector.executeWrite(cypherCreateNode(parent, value.id(), Labels.DiskSegment.name(), properties));
+
 	}
 
 	private void namespaceToDisk(Long namespace, Long parent) {
@@ -49,6 +149,8 @@ public class JQA2RD {
 				namespaceToDisk(result.get("p").asNode().id(), disk);
 			});
 	}
+
+
 
 	private void structureToDisk(Node structure, Long parent) {
 		String color = config.getRDClassColorAsPercentage();
