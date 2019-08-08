@@ -7,9 +7,11 @@ import org.getaviz.generator.OutputFormatHelper;
 import java.io.FileWriter;
 import java.io.IOException;
 import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.StatementResult;
 import org.getaviz.generator.database.DatabaseConnector;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.Long;
 
 public class RD2AFrame {
 	private SettingsConfiguration config = SettingsConfiguration.getInstance();
@@ -38,12 +40,156 @@ public class RD2AFrame {
 
 	private String toX3DOMRD() {
 		StringBuilder elements = new StringBuilder();
+		StatementResult language = connector.executeRead("MATCH (n:Java) RETURN n ");
+		if(language.hasNext()){
 		connector.executeRead(
 				"MATCH (element)<-[:VISUALIZES]-(d:Disk)-[:HAS]->(p:Position) RETURN d,p, element.hash ORDER BY element.hash")
 				.forEachRemaining((result) -> {
 					elements.append(toDisk(result.get("d").asNode(), result.get("p").asNode()));
 				});
+		}else{
+			log.info("here 1");
+			connector.executeRead(
+			"MATCH (element)<-[:VISUALIZES]-(d:Disk)-[:HAS]->(p:Position) RETURN d,p, element.hash ORDER BY element.hash")
+			.forEachRemaining((result) -> {
+				elements.append(toDiskJS(result.get("d").asNode(), result.get("p").asNode()));
+			});
+		}
 		return elements.toString();
+	}
+
+	private String toDiskJS(Node disk, Node position) {
+		double radius = disk.get("radius").asDouble();
+		log.info("radius: " + radius);
+		Node entity = connector.getVisualizedEntity(disk.id());
+		ArrayList<Node> segments = new ArrayList<>();
+		connector.executeRead("MATCH (n)-[:CONTAINS]->(ds:DiskSegment)-[:VISUALIZES]->(element) WHERE ID(n) = "
+				+ disk.id() + " RETURN ds, element.id ORDER BY element.id").forEachRemaining((result) -> {
+					segments.add(result.get("ds").asNode());
+				});
+		log.info("segments: " + segments.toString());
+		StringBuilder builder = new StringBuilder();
+		if (radius - config.getRDRingWidth() == 0) {
+			builder.append("<a-circle id=\"" + Long.toString(entity.id()) + "\" ");
+			builder.append("\n");
+			builder.append("\t position=\"" + position.get("x") + " ");
+			builder.append(position.get("y") + " ");
+			builder.append(position.get("z") + "\"");
+			builder.append("\n");
+			builder.append("\t radius=\"" + radius + "\" ");
+			builder.append("\n");
+			builder.append("\t color=\"" + disk.get("color").asString() + "\"");
+			builder.append("\n");
+			builder.append("\t shader=\"flat\"");
+			builder.append("\n");
+			builder.append("\t buffer=\"true\"");
+			builder.append("\n");
+			builder.append("\t flat-shading=\"true\"");
+			builder.append("\n");
+			builder.append("\t depth-test=\"false\"");
+			builder.append("\n");
+			builder.append("\t depth-write=\"false\">");
+			builder.append("\n");
+			builder.append("\t" + toSegmentJS(segments));
+			builder.append("\n");
+			builder.append("</a-circle>");
+			builder.append("\n");
+		} else {
+			builder.append("<a-ring id=\"" + Long.toString(entity.id()) + "\"");
+			builder.append("\n");
+			builder.append("\t position=\"" + position.get("x") + " ");
+			builder.append(position.get("y") + " ");
+			builder.append(position.get("z") + "\"");
+			builder.append("\n");
+			builder.append("\t radius-inner=\"" + (radius - config.getRDRingWidth()) + "\"");
+			builder.append("\n");
+			builder.append("\t radius-outer=\"" + radius + "\" ");
+			builder.append("\n");
+			builder.append("\t color=\"" + disk.get("color").asString() + "\"");
+			builder.append("\n");
+			builder.append("\t shader=\"flat\"");
+			builder.append("\n");
+			builder.append("\t buffer=\"true\"");
+			builder.append("\n");
+			builder.append("\t flat-shading=\"true\"");
+			builder.append("\n");
+			builder.append("\t depth-test=\"false\"");
+			builder.append("\n");
+			builder.append("\t depth-write=\"false\"");
+			builder.append("\n");
+			builder.append("\t segments-phi=\"1\">");
+			builder.append("\n");
+			builder.append("\t" + toSegmentJS(segments));
+			builder.append("\n");
+			builder.append("</a-ring>");
+			builder.append("\n");
+		}
+		log.info(builder.toString());
+		return builder.toString();
+	}
+
+	private String toSegmentJS(List<Node> segments) {
+		StringBuilder builder = new StringBuilder();
+		for (final Node segment : segments) {
+			Node entity = connector.getVisualizedEntity(segment.id());
+			log.info("segment inner Radius: " + segment.get("innerRadius"));
+			if(segment.get("innerRadius").isNull()){
+				log.info("null");
+			}else{
+			if (segment.get("innerRadius").asDouble() == 0) {
+				builder.append("<a-circle id=\"" + entity.get("id").asString() + "\"");
+				builder.append("\n");
+				builder.append("\t radius=\"" + segment.get("outerRadius") + "\" ");
+				builder.append("\n");
+				builder.append("\t color=\"" + segment.get("color").asString() + "\"");
+				builder.append("\n");
+				builder.append("\t theta-start=\"" + segment.get("anglePosition") + "\"");
+				builder.append("\n");
+				builder.append("\t theta-length=\"" + segment.get("angle") + "\"");
+				builder.append("\n");
+				builder.append("\t shader=\"flat\"");
+				builder.append("\n");
+				builder.append("\t buffer=\"true\"");
+				builder.append("\n");
+				builder.append("\t flat-shading=\"true\"");
+				builder.append("\n");
+				builder.append("\t depth-test=\"false\"");
+				builder.append("\n");
+				builder.append("\t depth-write=\"false\">");
+				builder.append("\n");
+				builder.append("</a-circle>");
+				builder.append("\n");
+			} else {
+				builder.append("<a-ring id=\"" + entity.get("id").asString() + "\"");
+				builder.append("\n");
+				builder.append("\t radius-inner=\"" + segment.get("innerRadius") + "\"");
+				builder.append("\n");
+				builder.append("\t radius-outer=\"" + segment.get("outerRadius") + "\" ");
+				builder.append("\n");
+				builder.append("\t color=\"" + segment.get("color").asString() + "\"");
+				builder.append("\n");
+				builder.append("\t shader=\"flat\"");
+				builder.append("\n");
+				builder.append("\t buffer=\"true\"");
+				builder.append("\n");
+				builder.append("\t flat-shading=\"true\"");
+				builder.append("\n");
+				builder.append("\t depth-test=\"false\"");
+				builder.append("\n");
+				builder.append("\t depth-write=\"false\"");
+				builder.append("\n");
+				builder.append("\t theta-start=\"" + segment.get("anglePosition") + "\"");
+				builder.append("\n");
+				builder.append("\t theta-length=\"" + segment.get("angle") + "\"");
+				builder.append("\n");
+				builder.append("\t segments-phi=\"1\">");
+				builder.append("\n");
+				builder.append("</a-ring>");
+				builder.append("\n");
+			}}
+		}
+		log.info(builder.toString());
+		return builder.toString();
 	}
 
 	private String toDisk(Node disk, Node position) {

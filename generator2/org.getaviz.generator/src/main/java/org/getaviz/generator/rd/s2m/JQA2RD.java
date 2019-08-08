@@ -106,30 +106,12 @@ public class JQA2RD {
 	}
 
 	private void valueToDiskSegment(Node value, Long parent) {
-		/**
 		String color = config.getRDDataColorAsPercentage();
 		if (config.getOutputFormat() == OutputFormat.AFrame) {
 			color = config.getRDDataColorHex();
 		}
 		String properties = String.format("size: %f, height: %f, transparency: %f, color: \'%s\'", 1.0, config.getRDHeight(),
 			config.getRDDataTransparency(), color);
-		connector.executeWrite(cypherCreateNode(parent, value, Labels.DiskSegment.name(), properties));
-		*/
-		double frequency = 0.0;
-		double luminance = 0.0;
-		double height = config.getRDHeight();
-		String color = config.getRDDataColorAsPercentage();
-		if (config.getOutputFormat() == OutputFormat.AFrame) {
-			color = config.getRDDataColorHex();
-		}
-		Integer numberOfStatements = 0;
-		double size = numberOfStatements.doubleValue();
-		if (numberOfStatements <= config.getRDMinArea()) {
-			size = config.getRDMinArea();
-		}
-		String properties = String.format(
-			"frequency: %f, luminance: %f, height: %f, transparency: %f, size: %f, color: \'%s\'", frequency, luminance,
-			height, config.getRDMethodTransparency(), size, color);
 		connector.executeWrite(cypherCreateNode(parent, value.id(), Labels.DiskSegment.name(), properties));
 
 	}

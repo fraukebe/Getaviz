@@ -106,7 +106,11 @@ public class RD2RD {
 				.executeRead("MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(:Method) WHERE ID(n) = " + disk
 						+ " SET d.size = d.size * " + config.getRDDataFactor() + " RETURN SUM(d.size) AS sum")
 				.single().get("sum").asDouble();
-		netArea = dataSum + methodSum;
+		double valueSum = connector
+				.executeRead("MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(:Value) WHERE ID(n) = " + disk
+						+ " SET d.size = d.size * " + config.getRDDataFactor() + " RETURN SUM(d.size) AS sum")
+				.single().get("sum").asDouble();
+		netArea = dataSum + methodSum + valueSum;
 		connector.executeWrite("MATCH (n) WHERE ID(n) = " + disk + " SET n.netArea = " + netArea);
 	}
 
@@ -182,7 +186,7 @@ public class RD2RD {
 			double b_methods = r_methods - r_data;
 			List<Node> diskMethods = Lists.newArrayList(RDUtils.getMethods(disk.id()));
 			List<Node> diskData = Lists.newArrayList(RDUtils.getData(disk.id()));
-			//TODO: List<Node> diskValues = Lists.newArrayList(RDUtils.getValues(disk.id()));
+			List<Node> diskValues = Lists.newArrayList(RDUtils.getValues(disk.id()));
 			if (!diskMethods.isEmpty()) {
 				calculateCrossSection(diskMethods, b_methods, height);
 				calculateSpines(diskMethods, r_methods - 0.5 * b_methods);
@@ -203,17 +207,16 @@ public class RD2RD {
 					}
 				}
 			}
-			// if (!diskValues.isEmpty()) {
-			// 	log.info("disk values not empty");
-			// 	calculateCrossSection(diskData, radius - ringWidth, height);
-			// 	calculateSpines(diskValues, 0.5 * (radius - ringWidth));
-			// 	if (config.getOutputFormat() == OutputFormat.AFrame) {
-			// 		for (Node value : diskValues) {
-			// 			connector.executeWrite("MATCH (n) WHERE ID(n) = " + value.id() + " SET n.outerRadius = " + radius
-			// 					+ ", n.innerRadius = " + 0.0);
-			// 		}
-			// 	}
-			// } //TODO: richtige Stelle?
+			if (!diskValues.isEmpty()) {
+				calculateCrossSection(diskValues, radius - ringWidth, height);
+				calculateSpines(diskValues, 0.5 * (radius - ringWidth));
+				if (config.getOutputFormat() == OutputFormat.AFrame) {
+					for (Node value : diskValues) {
+						connector.executeWrite("MATCH (n) WHERE ID(n) = " + value.id() + " SET n.outerRadius = " + radius
+								+ ", n.innerRadius = " + 0.0);
+					}
+				}
+			} //TODO: richtige Stelle?
 		} else {
 			double outerRadius = calculateOuterRadius(disk.id());
 			double r_data = Math.sqrt((dataArea * netArea / Math.PI) + (outerRadius * outerRadius));
@@ -239,6 +242,17 @@ public class RD2RD {
 					for (Node data : diskData) {
 						connector.executeWrite("MATCH (n) WHERE ID (n)= " + data.id() + " SET n.outerRadius = " + r_data
 								+ ", n.innerRadius = " + (r_data - b_data));
+					}
+				}
+			}
+			List<Node> diskValues = Lists.newArrayList(RDUtils.getValues(disk.id()));
+			if (!diskValues.isEmpty()) {
+				calculateCrossSection(diskValues, radius - ringWidth, height);
+				calculateSpines(diskValues, 0.5 * (radius - ringWidth));
+				if (config.getOutputFormat() == OutputFormat.AFrame) {
+					for (Node value : diskValues) {
+						connector.executeWrite("MATCH (n) WHERE ID(n) = " + value.id() + " SET n.outerRadius = "
+								+ radius + ",n.innerRadius = " + 0.0);
 					}
 				}
 			}
