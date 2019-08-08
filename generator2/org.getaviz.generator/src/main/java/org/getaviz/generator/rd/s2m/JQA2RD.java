@@ -16,7 +16,7 @@ public class JQA2RD {
 	private Log log = LogFactory.getLog(JQA2RD.class );
 
 	public JQA2RD() {
-		log.info("JQA2RD has started");
+		log.info("JQA2RD started");
 		connector.executeWrite("MATCH (n:RD) DETACH DELETE n");
 		long model = connector.addNode(
 			String.format(
@@ -138,12 +138,12 @@ public class JQA2RD {
 		String properties = String.format("ringWidth: %f, height: %f, transparency: %f", config.getRDRingWidth(),
 			config.getRDHeight(), config.getRDNamespaceTransparency());
 		long disk = connector.addNode(cypherCreateNode(parent, namespace, Labels.Disk.name(), properties), "n").id();
-		connector.executeRead("MATCH (n)-[:DECLARES]->(t:Type) WHERE ID(n) = " + namespace +
-			" AND EXISTS(t.hash) AND (t:Class OR t:Variable OR t:Function) AND NOT t:Inner RETURN t").
+		connector.executeRead("MATCH (n)-[:CONTAINS]->(t:Type) WHERE ID(n) = " + namespace +
+			" AND EXISTS(t.hash) AND (t:Class OR t:Interface OR t:Annotation OR t:Enum) AND NOT t:Inner RETURN t").
 			forEachRemaining((result) -> {
 				structureToDisk(result.get("t").asNode(), disk);
 			});
-		connector.executeRead("MATCH (n)-[:DECLARES]->(p:Package) WHERE ID(n) = " + namespace +
+		connector.executeRead("MATCH (n)-[:CONTAINS]->(p:Package) WHERE ID(n) = " + namespace +
 			" AND EXISTS(p.hash) RETURN p").
 			forEachRemaining((result) -> {
 				namespaceToDisk(result.get("p").asNode().id(), disk);
@@ -161,9 +161,9 @@ public class JQA2RD {
 		String properties = String.format("ringWidth: %f, height: %f, transparency: %f, color: \'%s\'", config.getRDRingWidth(),
 			config.getRDHeight(), config.getRDClassTransparency(), color);
 		long disk = connector.addNode(cypherCreateNode(parent, structure.id(), Labels.Disk.name(), properties), "n").id();
-		StatementResult methods = connector.executeRead("MATCH (n)-[:INVOKES]->(m:Function) WHERE ID(n) = " + structure.id() +
+		StatementResult methods = connector.executeRead("MATCH (n)-[:DECLARES]->(m:Method) WHERE ID(n) = " + structure.id() +
 			" AND EXISTS(m.hash) RETURN m");
-		StatementResult fields = connector.executeRead("MATCH (n)-[:DECLARES]->(f:Variable) WHERE ID(n) = " + structure.id() +
+		StatementResult fields = connector.executeRead("MATCH (n)-[:DECLARES]->(f:Field) WHERE ID(n) = " + structure.id() +
 			" AND EXISTS(f.hash) RETURN f");
 
 		if (config.isMethodTypeMode()) {
@@ -210,8 +210,8 @@ public class JQA2RD {
 				});
 			}
 		}
-		connector.executeRead("MATCH (n)-[:DECLARES]->(t:Type) WHERE ID(n) = " + structure.id() +
-			" AND EXISTS(t.hash) AND (t:Class OR t:Variable OR t:Function) RETURN t").
+		connector.executeRead("MATCH (n)-[:CONTAINS]->(t:Type) WHERE ID(n) = " + structure.id() +
+			" AND EXISTS(t.hash) AND (t:Class OR t:Interface OR t:Annotation OR t:Enum) RETURN t").
 			forEachRemaining((result) -> {
 				structureToDisk(result.get("t").asNode(), disk);
 			});

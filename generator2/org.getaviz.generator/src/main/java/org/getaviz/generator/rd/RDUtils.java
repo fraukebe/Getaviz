@@ -12,12 +12,12 @@ import org.neo4j.driver.v1.types.Node;
 public class RDUtils {
 	static DatabaseConnector connector = DatabaseConnector.getInstance();
 	//static val log = LogFactory::getLog(RDUtils)
-	
-	
+
+
 	public static Iterator<Node> getMethods(Long disk) {
 		return connector.executeRead(
-			"MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(method:Method) " + 
-			"WHERE ID(n) = " + disk + " " + 
+			"MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(method:Method) " +
+			"WHERE ID(n) = " + disk + " " +
 			"RETURN d " +
 			"ORDER BY method.hash"
 		).stream().map(s -> s.get("d").asNode()).collect(Collectors.toList()).listIterator();
@@ -26,9 +26,9 @@ public class RDUtils {
 
 	public static StatementResult getSubDisks(Long disk) {
 		return connector.executeRead(
-			"MATCH (n)-[:CONTAINS]->(d:Disk)-[:VISUALIZES]->(element) " + 
+			"MATCH (n)-[:CONTAINS]->(d:Disk)-[:VISUALIZES]->(element) " +
 			"WHERE ID(n) = " + disk + " " +
-			"RETURN d " + 
+			"RETURN d " +
 			"ORDER BY element.hash"
 		);
 	}
@@ -36,19 +36,28 @@ public class RDUtils {
 	public static Iterator<Node> getData(Long disk) {
 		return connector.executeRead(
 			"MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(field:Field) " +
-			"WHERE ID(n) = " + disk + " " + 
+			"WHERE ID(n) = " + disk + " " +
 			"RETURN d " +
 			"ORDER BY field.hash"
 		).stream().map(s -> s.get("d").asNode()).collect(Collectors.toList()).listIterator();
 
 	}
 
+	public static Iterator<Node> getValues(Long disk) {
+		return connector.executeRead(
+			"MATCH (n)-[:CONTAINS]->(d:DiskSegment)-[:VISUALIZES]->(val:Value) " +
+			"WHERE ID(n) = " + disk + " " +
+			"RETURN d " +
+			"ORDER BY val.hash"
+		).stream().map(s -> s.get("d").asNode()).collect(Collectors.toList()).listIterator();
+
+	}
+
 	public static double sum(Iterable<Node> segments) {
-		double sum = 0.0; 
+		double sum = 0.0;
 		for(Node segment: segments) {
-			sum += segment.get("size").asDouble();			
+			sum += segment.get("size").asDouble();
 		}
 		return sum;
 	}
 }
-

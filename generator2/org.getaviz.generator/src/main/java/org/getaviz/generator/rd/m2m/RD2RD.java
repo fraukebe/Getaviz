@@ -38,6 +38,13 @@ public class RD2RD {
 		log.info("RD2RD started");
 		StatementResult length = connector.executeRead(
 				"MATCH p=(n:Package)-[:CONTAINS*]->(m:Package) WHERE NOT (m)-[:CONTAINS]->(:Package) RETURN max(length(p)) AS length");
+		if(length.peek().get("length").isNull()){
+			log.info("case JavaScript");
+			length = connector.executeRead(
+					"MATCH p=(n)-[:DECLARES*]->(m) WHERE NOT (m)-[:DECLARES]->(:Class) "+
+					"AND NOT (m)-[:DECLARES]->(:Function) AND NOT (m)-[:DECLARES]->(:Variable) AND NOT (m)-[:INVOKES]->(:Function) "+
+					"RETURN max(length(p)) AS length");
+		}
 		int namespaceMaxLevel = length.single().get("length").asInt() + 1;
 		length = connector.executeRead(
 				"MATCH p=(n:RD:Model)-[:CONTAINS*]->(m:RD:Disk) WHERE NOT (m)-[:CONTAINS]->(:RD:Disk) RETURN max(length(p)) AS length");
@@ -124,6 +131,7 @@ public class RD2RD {
 	private void postLayout(Node disk) {
 		List<Node> data = Lists.newArrayList(RDUtils.getData(disk.id()));
 		List<Node> methods = Lists.newArrayList(RDUtils.getMethods(disk.id()));
+		//TODO: List<Node> values = Lists.newArrayList(RDUtils.getValues(disk.id()));
 		fractions(disk, data, methods);
 		fractions(data);
 		fractions(methods);
@@ -140,6 +148,10 @@ public class RD2RD {
 		double netArea = disk.get("netArea").asDouble();
 		double currentMethodArea = RDUtils.sum(methods) / netArea;
 		double currentDataArea = RDUtils.sum(data) / netArea;
+		if(netArea == 0){
+			currentMethodArea = 0.0;
+			currentDataArea = 0.0;
+		} //TODO ?
 		connector.executeWrite("MATCH (n) WHERE ID(n) = " + disk.id() + " SET n.methodArea = " + currentMethodArea
 				+ ", n.dataArea = " + currentDataArea);
 	}
@@ -170,6 +182,7 @@ public class RD2RD {
 			double b_methods = r_methods - r_data;
 			List<Node> diskMethods = Lists.newArrayList(RDUtils.getMethods(disk.id()));
 			List<Node> diskData = Lists.newArrayList(RDUtils.getData(disk.id()));
+			//TODO: List<Node> diskValues = Lists.newArrayList(RDUtils.getValues(disk.id()));
 			if (!diskMethods.isEmpty()) {
 				calculateCrossSection(diskMethods, b_methods, height);
 				calculateSpines(diskMethods, r_methods - 0.5 * b_methods);
@@ -190,6 +203,17 @@ public class RD2RD {
 					}
 				}
 			}
+			// if (!diskValues.isEmpty()) {
+			// 	log.info("disk values not empty");
+			// 	calculateCrossSection(diskData, radius - ringWidth, height);
+			// 	calculateSpines(diskValues, 0.5 * (radius - ringWidth));
+			// 	if (config.getOutputFormat() == OutputFormat.AFrame) {
+			// 		for (Node value : diskValues) {
+			// 			connector.executeWrite("MATCH (n) WHERE ID(n) = " + value.id() + " SET n.outerRadius = " + radius
+			// 					+ ", n.innerRadius = " + 0.0);
+			// 		}
+			// 	}
+			// } //TODO: richtige Stelle?
 		} else {
 			double outerRadius = calculateOuterRadius(disk.id());
 			double r_data = Math.sqrt((dataArea * netArea / Math.PI) + (outerRadius * outerRadius));
