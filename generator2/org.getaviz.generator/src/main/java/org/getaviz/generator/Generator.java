@@ -7,6 +7,7 @@ import org.getaviz.generator.city.m2t.City2AFrame;
 import org.getaviz.generator.city.m2t.City2X3D;
 import org.getaviz.generator.jqa.DatabaseBuilder;
 import org.getaviz.generator.jqa.JQA2JSON;
+import org.getaviz.generator.jqa.JS2JSON;
 import org.getaviz.generator.rd.m2m.RD2RD;
 import org.getaviz.generator.rd.m2t.RD2AFrame;
 import org.getaviz.generator.rd.m2t.RD2X3D;
@@ -27,6 +28,22 @@ public class Generator {
 			if(!config.isSkipScan()) {
 				new DatabaseBuilder();
 			}
+			if(config.getInputFiles().matches(".*\\.js\\Z")){
+				new JQA2RD();
+				new JS2JSON();
+				new RD2RD();
+				switch (config.getOutputFormat()) {
+				case X3D: {
+					new RD2X3D();
+					break;
+				}
+				case AFrame: {
+					new RD2AFrame();
+					break;
+				}
+				}
+
+			}else{
 			switch (config.getMetaphor()) {
 			case CITY: {
 				new JQA2City();
@@ -57,7 +74,7 @@ public class Generator {
 				break;
 			}
 			}
-
+			}
 		} catch (Exception e) {
 			log.error(e);
 		}

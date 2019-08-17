@@ -40,7 +40,7 @@ public class DatabaseBuilder {
 
 	public void enhance() {
 		log.info("jQA enhancement started.");
-		connector.executeWrite(labelGetter(), labelSetter(), labelPrimitives(), labelInnerTypes());
+		connector.executeWrite(labelGetter(), labelSetter(), labelPrimitives(), labelInnerTypes(), labelPrimitivesJS());
 		connector.executeWrite(labelAnonymousInnerTypes());
 		addHashes();
 		log.info("jQA enhancement finished");
@@ -51,10 +51,19 @@ public class DatabaseBuilder {
 		connector.executeRead(collectAllTypes()).forEachRemaining((result) -> { enhanceNode(result); });
 		connector.executeRead(collectAllFields()).forEachRemaining((result) -> { enhanceNode(result); });
 		connector.executeRead(collectAllMethods()).forEachRemaining((result) -> { enhanceNode(result); });
+
+		connector.executeRead(collectAllJSFiles()).forEachRemaining((result) -> { enhanceNode(result); });
+		connector.executeRead(collectAllJSTypes()).forEachRemaining((result) -> { enhanceNode(result); });
+		connector.executeRead(collectAllJSValues()).forEachRemaining((result) -> { enhanceNode(result); });
 	}
 
 	private String createHash(String fqn) {
 		return "ID_" + DigestUtils.sha1Hex(fqn + config.getRepositoryName() + config.getRepositoryOwner());
+	}
+
+
+	private String labelPrimitivesJS() {
+		return "MATCH (n:JavaScript) WHERE (n:Class OR n:Function OR n:Variable) AND  n.name =~ \"[a-z]+\" SET n:Primitive";
 	}
 
 	private String labelPrimitives() {
@@ -62,16 +71,16 @@ public class DatabaseBuilder {
 	}
 
 	private String labelGetter() {
-		return "MATCH (o:Type)-[:DECLARES]->(method:Method)-[getter:READS]->(attribute:Field)<-[:DECLARES]-(q:Type) " + 
-				"WHERE method.name =~ \"get[A-Z]+[A-Za-z]*\" " + 
-				"AND toLower(method.name) contains(attribute.name) AND ID(o) = ID(q) " + 
+		return "MATCH (o:Type)-[:DECLARES]->(method:Method)-[getter:READS]->(attribute:Field)<-[:DECLARES]-(q:Type) " +
+				"WHERE method.name =~ \"get[A-Z]+[A-Za-z]*\" " +
+				"AND toLower(method.name) contains(attribute.name) AND ID(o) = ID(q) " +
 				"SET method:Getter";
 	}
 
 	private String labelSetter() {
-		return "MATCH (o:Type)-[:DECLARES]->(method:Method)-[setter:WRITES]->(attribute:Field)<-[:DECLARES]-(q:Type) " + 
+		return "MATCH (o:Type)-[:DECLARES]->(method:Method)-[setter:WRITES]->(attribute:Field)<-[:DECLARES]-(q:Type) " +
 				"WHERE method.name =~ \"set[A-Z]+[A-Za-z]*\" " +
-				"AND toLower(method.name) contains(attribute.name) AND ID(o) = ID(q) " + 
+				"AND toLower(method.name) contains(attribute.name) AND ID(o) = ID(q) " +
 				"SET method:Setter";
 	}
 
@@ -89,7 +98,7 @@ public class DatabaseBuilder {
 
 	private String collectAllTypes() {
 		return "MATCH (n:Type) " +
-				"WHERE (n:Interface OR n:Class OR n:Enum OR n:Annotation) " + 
+				"WHERE (n:Interface OR n:Class OR n:Enum OR n:Annotation) " +
 				"AND NOT n:Anonymous AND NOT (n)<-[:CONTAINS]-(:Method) " +
 				"RETURN n";
 	}
@@ -102,6 +111,17 @@ public class DatabaseBuilder {
 	private String collectAllMethods() {
 		return "MATCH (n:Method)<-[:DECLARES]-(f:Type) " +
 				"WHERE (NOT n.name CONTAINS '$') AND (NOT f:Anonymous) RETURN DISTINCT n";
+	}
+
+	private String collectAllJSFiles() {
+		return "MATCH (n:JavaScript:File) RETURN n";
+	}
+
+	private String collectAllJSTypes() {
+		return "MATCH (n:JavaScript) WHERE (n:Variable OR n:Function OR n:Class) RETURN n";
+	}
+	private String collectAllJSValues() {
+		return "MATCH (n:JavaScript:Value) RETURN n";
 	}
 
 	private void enhanceNode(Record record) {

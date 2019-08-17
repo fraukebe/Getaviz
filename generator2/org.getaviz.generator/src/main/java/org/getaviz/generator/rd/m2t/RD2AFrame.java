@@ -48,11 +48,11 @@ public class RD2AFrame {
 					elements.append(toDisk(result.get("d").asNode(), result.get("p").asNode()));
 				});
 		}else{
-			log.info("here 1");
+			log.info("JavaScript");
 			connector.executeRead(
 			"MATCH (element)<-[:VISUALIZES]-(d:Disk)-[:HAS]->(p:Position) RETURN d,p, element.hash ORDER BY element.hash")
 			.forEachRemaining((result) -> {
-				elements.append(toDiskJS(result.get("d").asNode(), result.get("p").asNode()));
+				elements.append(toDisk(result.get("d").asNode(), result.get("p").asNode()));
 			});
 		}
 		return elements.toString();
@@ -137,7 +137,7 @@ public class RD2AFrame {
 				log.info("null");
 			}else{
 			if (segment.get("innerRadius").asDouble() == 0) {
-				builder.append("<a-circle id=\"" + entity.get("id").asString() + "\"");
+				builder.append("<a-circle id=\"" + Long.toString(entity.id()) + "\"");
 				builder.append("\n");
 				builder.append("\t radius=\"" + segment.get("outerRadius") + "\" ");
 				builder.append("\n");
@@ -160,7 +160,7 @@ public class RD2AFrame {
 				builder.append("</a-circle>");
 				builder.append("\n");
 			} else {
-				builder.append("<a-ring id=\"" + entity.get("id").asString() + "\"");
+				builder.append("<a-ring id=\"" + Long.toString(entity.id()) + "\"");
 				builder.append("\n");
 				builder.append("\t radius-inner=\"" + segment.get("innerRadius") + "\"");
 				builder.append("\n");
@@ -256,6 +256,7 @@ public class RD2AFrame {
 			builder.append("</a-ring>");
 			builder.append("\n");
 		}
+		log.info(builder.toString());
 		return builder.toString();
 	}
 
@@ -315,6 +316,7 @@ public class RD2AFrame {
 				builder.append("\n");
 			}
 		}
+		log.info(builder.toString());
 		return builder.toString();
 	}
 }

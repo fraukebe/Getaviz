@@ -113,7 +113,6 @@ public class JQA2RD {
 		String properties = String.format("size: %f, height: %f, transparency: %f, color: \'%s\'", 1.0, config.getRDHeight(),
 			config.getRDDataTransparency(), color);
 		connector.executeWrite(cypherCreateNode(parent, value.id(), Labels.DiskSegment.name(), properties));
-
 	}
 
 	private void namespaceToDisk(Long namespace, Long parent) {
