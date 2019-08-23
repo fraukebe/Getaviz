@@ -61,7 +61,7 @@ public class JS2JSON {
         log.info("2");
 			}
 			if (el.hasLabel(Labels.File.name())) {
-				builder.append(toMetaDataNamespace(el));
+				builder.append(toMetaDataFile(el));
 				builder.append("\n");
         log.info("3");
 			}
@@ -98,22 +98,26 @@ public class JS2JSON {
 		return builder.toString();
 	}
 
-	private String toMetaDataNamespace(Node namespace) {
-		StatementResult parentHash = connector
-				.executeRead("MATCH (parent:File)-[:CONTAINS]->(namespace) WHERE ID(namespace) = " + namespace.id()
-						+ " RETURN parent.hash");
+	private String toMetaDataFile(Node file) {
+		StatementResult fileHash = connector
+				.executeRead("MATCH (file:File)-[:DECLARES]->(namespace) WHERE ID(file) = " + file.id()
+						+ " RETURN file.hash");
 		String belongsTo = "root";
-		if (parentHash.hasNext()) {
-			belongsTo = parentHash.single().get("parent.hash").asString();
+		StatementResult fileName = connector
+				.executeRead("MATCH (x:File) WHERE NOT (ID(x) =" + file.id() + ") RETURN x.fileName");
+		String fname = "test";
+		log.info("test --- \n\n");
+		if (fileName.hasNext()){
+			fname = fileName.single().get("x.fileName").asString();
 		}
 		StringBuilder builder = new StringBuilder();
-		builder.append("\"id\":            \"" + namespace.get("hash").asString() + "\",");
+		builder.append("\"id\":            \"" + file.get("hash").asString() + "\",");
 		builder.append("\n");
-		builder.append("\"qualifiedName\": \"" + namespace.get("fqn").asString() + "\",");
+		builder.append("\"qualifiedName\": \"" + file.get("fqn").asString() + "\",");
 		builder.append("\n");
-		builder.append("\"name\":          \"" + namespace.get("name").asString() + "\",");
+		builder.append("\"name\":          \"" + fname + "\",");
 		builder.append("\n");
-		builder.append("\"type\":          \"FAMIX.Namespace\",");
+		builder.append("\"type\":          \"File\",");
 		builder.append("\n");
 		builder.append("\"belongsTo\":     \"" + belongsTo + "\"");
 		builder.append("\n");

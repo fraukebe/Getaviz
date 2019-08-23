@@ -47,21 +47,21 @@ public class JQA2RD {
 		log.info("JQA2RD finished");
 	}
 
-	private void fileToDisk(Long namespace, Long parent) {
+	private void fileToDisk(Long file, Long parent) {
 		String properties = String.format("ringWidth: %f, height: %f, transparency: %f", config.getRDRingWidth(),
 			config.getRDHeight(), config.getRDNamespaceTransparency());
-		long disk = connector.addNode(cypherCreateNode(parent, namespace, Labels.Disk.name(), properties), "n").id();
-		connector.executeRead("MATCH (n)-[:DECLARES]->(v:Variable) WHERE ID(n) = " + namespace +
+		long disk = connector.addNode(cypherCreateNode(parent, file, Labels.Disk.name(), properties), "n").id();
+		connector.executeRead("MATCH (n)-[:DECLARES]->(v:Variable) WHERE ID(n) = " + file +
 			" RETURN v").
 			forEachRemaining((result) -> {
 				variableToDisk(result.get("v").asNode(), disk);
 			});
-		connector.executeRead("MATCH (n)-[:DECLARES]->(c:Class) WHERE ID(n) = " + namespace +
+		connector.executeRead("MATCH (n)-[:DECLARES]->(c:Class) WHERE ID(n) = " + file +
 			" RETURN c").
 			forEachRemaining((result) -> {
 				classToDisk(result.get("c").asNode(), disk);
 			});
-		connector.executeRead("MATCH (n)-[:DECLARES]->(f:Function) WHERE ID(n) = " + namespace +
+		connector.executeRead("MATCH (n)-[:DECLARES]->(f:Function) WHERE ID(n) = " + file +
 			" RETURN f").
 			forEachRemaining((result) -> {
 				functionToDisk(result.get("f").asNode(), disk);
@@ -69,7 +69,7 @@ public class JQA2RD {
 	}
 
 	private void variableToDisk(Node variable, Long parent) {
-		String color = config.getRDDataColorAsPercentage();
+		String color = config.getRDVariableColorAsPercentage();
 		if (config.getOutputFormat() == OutputFormat.AFrame) {
 			color = config.getRDDataColorHex();
 		}

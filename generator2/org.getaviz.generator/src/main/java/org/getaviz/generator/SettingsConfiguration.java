@@ -37,7 +37,7 @@ public class SettingsConfiguration {
 		loadConfig(path);
 		return instance;
 	}
-	
+
 	public static SettingsConfiguration getInstance(HttpServletRequest request) {
 		if (instance == null) {
 			instance = new SettingsConfiguration();
@@ -45,7 +45,7 @@ public class SettingsConfiguration {
 		loadConfig(request);
 		return instance;
 	}
-	
+
 	private static void loadConfig(HttpServletRequest request) {
 		config = new PropertiesConfiguration();
 		Enumeration<String> parameters = request.getParameterNames();
@@ -77,7 +77,7 @@ public class SettingsConfiguration {
 			throw new RuntimeException("There is no specified uri to a jar or war file. Check if in the settings.properties file the field input.files is set to one or more existing uris.");
 		}
 		String files = "";
-		
+
 		ClassLoader classLoader = this.getClass().getClassLoader();
 		for(int i = 0; i < fileArray.length; i++) {
 			String path = fileArray[i];
@@ -97,7 +97,7 @@ public class SettingsConfiguration {
 		}
 		return files;
 	}
-	
+
 	public Metaphor getMetaphor() {
 		String metaphor = config.getString("metaphor", "rd");
 		switch (metaphor) {
@@ -107,15 +107,15 @@ public class SettingsConfiguration {
 				return Metaphor.RD;
 		}
 	}
-	
+
 	public String getName() {
 		return config.getString("input.name", "default");
 	}
-	
+
 	public String getOutputPath() {
 		return config.getString("output.path", "/var/lib/jetty/data-gen/") + getName() + "/model/";
 	}
-	
+
 	public String getRepositoryName() {
 		return config.getString("history.repository_name", "");
 	}
@@ -132,7 +132,7 @@ public class SettingsConfiguration {
 			return OutputFormat.AFrame;
 		}
 	}
-	
+
 	public String getBuildingTypeAsString() {
 		return config.getString("city.building_type", "original");
 	}
@@ -269,7 +269,7 @@ public class SettingsConfiguration {
 				} catch(NumberFormatException e) {
 					return defaultValue;
 				}
-				
+
 			}
 			return value;
 		}
@@ -394,7 +394,7 @@ public class SettingsConfiguration {
 	public String getCityColorAsPercentage(String name) {
 		return getColorFormatted(getCityColor(name));
 	}
-	
+
 	public double getRDDataFactor() {
 		return config.getDouble("rd.data_factor", 4.0);
 	}
@@ -455,6 +455,18 @@ public class SettingsConfiguration {
 		return getColorFormatted(getRDDataColor());
 	}
 
+	public Color getRDVariableColor() {
+		return getColor(getRDVariableColorHex());
+	}
+
+	public String getRDVariableColorHex() {
+		return config.getString("rd.color.variable", "#a3a210");
+	}
+
+	public String getRDVariableColorAsPercentage() {
+		return getColorFormatted(getRDVariableColor());
+	}
+
 	public Color getRDMethodColor() {
 		return getColor(getRDMethodColorHex());
 	}
@@ -501,28 +513,28 @@ public class SettingsConfiguration {
 	public static enum OutputFormat {
 		X3D, AFrame;
 	}
-	
+
 	/**
 	 * Sets in which way the Historic Evolution
-	 * of the analyzed Software should be represented, 
-	 * it can either be in a static or dynamic way 
+	 * of the analyzed Software should be represented,
+	 * it can either be in a static or dynamic way
 	 */
-	
+
 	public static enum BuildingType{
-		CITY_ORIGINAL, CITY_PANELS, CITY_BRICKS, CITY_FLOOR; 
+		CITY_ORIGINAL, CITY_PANELS, CITY_BRICKS, CITY_FLOOR;
 	}
-	
+
 	/**
 	 * Defines how the methods and attributes are sorted and colored in the city
 	 * model.
-	 * 
+	 *
 	 * @see CitySettings#SET_SCHEME SET_SCHEME
 	 */
 	public static enum Schemes {
 		/**
 		 * The class elements are sorted and colored corresponding to there
 		 * visibility modifiers.
-		 * 
+		 *
 		 * @see SortPriorities_Visibility
 		 */
 		VISIBILITY,
@@ -530,25 +542,25 @@ public class SettingsConfiguration {
 		/**
 		 * The class elements are sorted and colored associated to
 		 * type/functionality of the method.
-		 * 
+		 *
 		 * @see Methods.SortPriorities_Types
 		 * @see Attributes.SortPriorities_Types
 		 */
 		TYPES;
 	};
-	
+
 	/**
 	 * Defines which elements of a class are to show.
-	 * 
+	 *
 	 * @see CitySettings#SET_CLASS_ELEMENTS_MODE SET_CLASS_ELEMENTS_MODE
 	 */
 	public static enum ClassElementsModes {
 		METHODS_ONLY, ATTRIBUTES_ONLY, METHODS_AND_ATTRIBUTES;
 	}
-	
+
 	/**
 	 * Defines which how the elements of a class are sorted.
-	 * 
+	 *
 	 * @see CitySettings#SET_CLASS_ELEMENTS_SORT_MODE_COARSE
 	 *      SET_CLASS_ELEMENTS_SORT_MODE_COARSE
 	 */
@@ -559,7 +571,7 @@ public class SettingsConfiguration {
 	/**
 	 * A list of types of a method with the associated priority value.<br>
 	 * Highest priority/smallest number is placed on the bottom, lowest on top.
-	 * 
+	 *
 	 * @see #SET_CLASS_ELEMENTS_SORT_MODE_FINE SET_CLASS_ELEMENTS_SORT_MODE_FINE
 	 * @see SortPriorities_Visibility
 	 * @see Methods.SortPriorities_Types
@@ -587,10 +599,10 @@ public class SettingsConfiguration {
 	 * A list of visibility modifiers of a method with the associated priority
 	 * value.<br>
 	 * Highest priority/smallest number is placed on the bottom, lowest on top.
-	 * 
+	 *
 	 * @see #SET_CLASS_ELEMENTS_SORT_MODE_FINE SET_CLASS_ELEMENTS_SORT_MODE_FINE
 	 * @see ClassElementsSortModesFine
-	 * 
+	 *
 	 */
 	public static enum SortPriorities_Visibility {;
 		public static int PRIVATE = 1;
@@ -605,7 +617,7 @@ public class SettingsConfiguration {
 		 * A list of types of a method with the associated priority value.<br>
 		 * Highest priority/smallest number is placed on the bottom, lowest on
 		 * top.
-		 * 
+		 *
 		 * @see CitySettings#SET_CLASS_ELEMENTS_SORT_MODE_FINE
 		 *      SET_CLASS_ELEMENTS_SORT_MODE_FINE
 		 * @see ClassElementsSortModesFine
@@ -653,7 +665,7 @@ public class SettingsConfiguration {
 		 * A list of types of a method with the associated priority value.<br>
 		 * Highest priority/smallest number is placed on the bottom, lowest on
 		 * top.
-		 * 
+		 *
 		 * @see CitySettings#SET_CLASS_ELEMENTS_SORT_MODE_FINE
 		 *      SET_CLASS_ELEMENTS_SORT_MODE_FINE
 		 * @see ClassElementsSortModesFine
@@ -675,7 +687,7 @@ public class SettingsConfiguration {
 		/**
 		 * Defines the layout for the BuildingSegments of the city model, which
 		 * represents the methods and/or attributes of a class.
-		 * 
+		 *
 		 * @see CitySettings#SET_BRICK_LAYOUT SET_BRICK_LAYOUT
 		 */
 		public static enum Layout {
@@ -728,7 +740,7 @@ public class SettingsConfiguration {
 		 * Defines the the space between the panels.<br>
 		 * The panels can either touch each other without a gap, leave a gap
 		 * between them, or fill the space with a separator of a defined color.
-		 * 
+		 *
 		 * @see CitySettings#SET_PANEL_SEPARATOR_MODE SET_PANEL_SEPARATOR_MODE
 		 */
 		public static enum SeparatorModes {
@@ -742,7 +754,7 @@ public class SettingsConfiguration {
 			/**
 			 * The panels have a free space between them and don't touch each
 			 * other.
-			 * 
+			 *
 			 * @see Panels#PANEL_VERTICAL_GAP PANEL_VERTICAL_GAP
 			 */
 			GAP,
@@ -750,14 +762,14 @@ public class SettingsConfiguration {
 			/**
 			 * Between the panels separators are placed with a fix height and
 			 * color.
-			 * 
+			 *
 			 * @see Panels#SEPARATOR_HEIGHT SEPARATOR_HEIGHT
 			 */
 			SEPARATOR;
 
 		}
 	}
-	
+
 	public static enum Original {
 		;
 		public static enum BuildingMetric {
@@ -765,7 +777,7 @@ public class SettingsConfiguration {
 			NOS;
 		}
 	}
-	
+
 	public static enum Metaphor {
 		RD, CITY
 	}
